@@ -77,15 +77,3 @@ class ConverterToSIWeather:
         hPc = np.array(inches)
 
         return np.round(hPc * 33.8639, 2)
-
-
-# Example usage
-"""
-converter = TemperatureConverter()
-temp_str = "['91', '82.7', '75']"
-cleaned_temp = converter.clean_temp(temp_str)
-float_temps = converter.to_float(cleaned_temp)
-celsius_temps = converter.to_celsius(float_temps)
-
-print(celsius_temps)
-"""
