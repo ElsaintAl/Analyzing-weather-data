@@ -1,24 +1,27 @@
+import os
 import calendar
+
+import pandas as pd
+
 import seaborn as sns
 import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
 from matplotlib.ticker import PercentFormatter
 
-from to_SI import new_si
+from to_SI import si_dataframe
 from date import DateGenerator
 
 
 def main():
-    filename = 'spata_venizelos_2024_5.csv'
+    filename = 'spata_venizelos_2024_1.csv'
+
     dg = DateGenerator(filename)
-#    multi_histogram(filename, dg)
+    multi_histogram(filename, dg)
 #    temp_humidity_corr(filename)
-    month_temp_l_plot(filename, dg)
+#    month_temp_l_plot(filename, dg)
 
 
 def create_df(filename):
-    return new_si(filename)
+    return si_dataframe(filename)
 
 
 def get_month_name(month_number):
@@ -152,7 +155,6 @@ def multi_histogram(filename, date_generator):
     month, year = dg.get_month_year()
     a_temp = get_temp(filename)[1]
     a_humi = get_humidity(filename)[1]
-    a = range(int(min(a_humi)), int(max(a_humi)))
 
     a_pres = get_pressure(filename)[1]
     a_dew = get_dew_point(filename)[1]
@@ -160,11 +162,9 @@ def multi_histogram(filename, date_generator):
                        'Humidity (%)': a_humi[1:],
                        'Pressure (hPc)': a_pres[1:],
                        'Dew Point (°C)': a_dew[1:]})
-
     figure, axis = plt.subplots(2, 2)
     plt.suptitle(f'Distribution of weather parameters for {get_month_name(month)} {year} in Spata')
     colors = sns.color_palette("viridis")
-    print(len(colors))
 
     for ax in axis.flatten():  # Flatten the array to iterate over individual Axes objects
         if ax == axis[0, 0]:
