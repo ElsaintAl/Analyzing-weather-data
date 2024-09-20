@@ -1,6 +1,10 @@
-import pandas as pd
 from converter import ConverterToSIWeather
+
+import argparse
+import pandas as pd
 import logging
+import os
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -89,16 +93,16 @@ def create_output_dataframe(df: pd.DataFrame) -> pd.DataFrame:
                'Wind Speed (mps)', 'Pressure (hPc)', 'Precipitation (hPc)']]
 
 
-def new_si(file: str) -> pd.DataFrame or None:
+def si_dataframe(file: str, overwrite: bool = False) -> pd.DataFrame or None:
     """
         Reads weather data, converts units to SI, and creates an output DataFrame.
 
         :arg file: The path to the CSV file.
+        :arg overwrite: Whether to overwrite the output file if it exists.
 
         :returns pd.DataFrame: The output DataFrame with weather data in SI units,
                                or None if an error occurs.
         """
-    converter = ConverterToSIWeather()
 
     df = read_weather_data(file)
     if df is None:
@@ -117,11 +121,27 @@ def new_si(file: str) -> pd.DataFrame or None:
         convert_unit(df, col_name, new_unit)
 
     converted_df = create_output_dataframe(df)
-    print(converted_df.head())
+
+    # Check if the output file exists
+    output_file = "SI_" + file
+    path = fr'C:\Users\SpaceYellow\Desktop\Python\Projects\Weather\SI_Month_Data\{output_file}'
+
+    if os.path.exists(path):
+        if overwrite:
+            converted_df.to_csv(path, index=False)
+            print(f"Saved converted data to {path}.")
+    else:
+        converted_df.to_csv(path, index=False)
+        print(f"Saved converted data to {path}.")
+
     return converted_df
 
 
-new_si('spata_venizelos_2024_1.csv')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Convert weather data to SI units.")
+    parser.add_argument("file", help="The input CSV file")
+    parser.add_argument("-o", "--overwrite", action="store_true",
+                        help="Overwrite the output file if it exists")
+    args = parser.parse_args()
 
-# path = fr'C:\Users\SpaceYellow\Desktop\Python\Projects\Weather\SI_Month_Data\SI_{file}.csv'
-# df_con.to_csv(path, index=False)
+    si_dataframe(args.file, args.overwrite)
