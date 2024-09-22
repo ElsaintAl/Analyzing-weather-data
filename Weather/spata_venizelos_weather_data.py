@@ -1,4 +1,3 @@
-import pandas
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -11,27 +10,81 @@ from bs4 import BeautifulSoup
 
 import calendar
 
+import configparser
+
+import logging
+
+import os
+
 import pandas as pd
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-def get_weather_data(year: int, month: int):
+
+def get_path() -> str or None:
+    """
+    Retrieves the executable path for ChromeDriver from the config.ini file.
+    If the file doesn't exist, it prompts the user for the path, creates the file,
+    and stores the path.
+
+    Returns
+    -------
+    str: The path to the ChromeDriver executable (if found).
+    None: If the path is not found in the config file and the user cancels the prompt.
+    """
+
+    config = configparser.ConfigParser()
+
+    if not os.path.exists('config.ini'):
+        while True:
+            exe_path = input('Enter the executable path: ')
+            if os.path.exists(exe_path):
+                config['paths'] = {'chromedriver': exe_path}
+                with open('config.ini', 'w') as configfile:
+                    config.write(configfile)
+                    break
+            else:
+                print("Invalid path. Please enter a valid path to the chromedriver executable.")
+
+    config.read('config.ini')
+
+    try:
+        executable_path = config['paths']['chromedriver']
+    except KeyError:
+        logger.error(f"Error: 'chromedriver' path not found in config.ini")
+        executable_path = None  # Or set a default path if desired
+
+    return executable_path
+
+
+def get_weather_data(year: int, month: int) -> tuple[int, list]:
     """
         Fetches weather data and the number of days for a given month and year from
         the provided URL using Selenium.
 
-        Args:
-            :param year: The year for which to retrieve data.
-            :param month: The month for which to retrieve data.
+        Parameters
+        ----------
+        :param year: The year for which to retrieve data.
+        :param month: The month for which to retrieve data.
 
-        Returns:
-            :param data: A list containing the extracted weather data.
-            :param days_in_month: The days for the specific date
+        Returns
+        -------
+        data: A list containing the extracted weather data.
+        days_in_month: The days for the specific date
+
+        Raise
+        -----
+        :raise ValueError: If the ChromeDriver executable path is missing.
         """
 
     days_in_month = calendar.monthrange(year=year, month=month)
 
-    executable_path = ('C:/Users/SpaceYellow/Desktop/Output/Selenium/'
-                       'chromedriver-win64/chromedriver.exe')
+    executable_path = get_path()
+
+    if not executable_path:
+        raise ValueError('Error: Executable path is missing.')
+
     service = Service(executable_path=executable_path)
 
     options = Options()
@@ -87,7 +140,7 @@ def get_weather_data(year: int, month: int):
                     data.append(row_data)
 
     except TimeoutException:
-        print("Loading took too much")
+        logger.warning(f"Warning: 'Loading took too much")
 
     driver.quit()
     return int(days_in_month[1]), data[2:]
@@ -97,12 +150,14 @@ def create_dataframe(days_in_month: int, data: list):
     """
     Creates a pandas DataFrame from the extracted weather data.
 
-    Args:
-        :param days_in_month: Days in the specific month
-        :param data: A list containing the extracted weather data.
+    Parameters
+    ----------
+    :param days_in_month: Days in the specific month
+    :param data: A list containing the extracted weather data.
 
-    Returns:
-        :param df: A DataFrame containing weather data columns.
+    Returns
+    -------
+    df: A DataFrame containing weather data columns.
     """
 
     if not data:
@@ -122,14 +177,16 @@ def create_dataframe(days_in_month: int, data: list):
     return df
 
 
-def save_to_csv(df: pandas.DataFrame, filename: str):
+def save_to_csv(df: pd.DataFrame, filename: str):
     """
     Saves the DataFrame to a CSV file.
 
-    Args:
-        :param df: The DataFrame to save.
-        :param filename: The name of the CSV file.
+    Parameter
+    ---------
+    :param df: The DataFrame to save.
+    :param filename: The name of the CSV file.
     """
+
     path = fr"C:\Users\SpaceYellow\Desktop\Python\Projects\Weather\Month_Data\{filename}.csv"
 
     if df is not None:
@@ -143,9 +200,12 @@ def main():
 
     year, month = int(input("Year: ")), int(input("Month: "))
 
-    days, data = get_weather_data(year=year, month=month)
-    df = create_dataframe(days_in_month=days, data=data)
-    save_to_csv(df, f'spata_venizelos_{year}_{month}')
+    try:
+        days, data = get_weather_data(year=year, month=month)
+        df = create_dataframe(days_in_month=days, data=data)
+        save_to_csv(df, f'spata_venizelos_{year}_{month}')
+    except ValueError as e:
+        print(f"Error: {e}"," \nPlease ensure the ChromeDriver executable path is set correctly.")
 
 
 if __name__ == "__main__":
